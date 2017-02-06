@@ -8,18 +8,24 @@ namespace ProjectFork
 {
     class FConsole
     {
+        private bool newline;
         public FConsole()
         {
-
+            //顺便说一下，Windows自带的cmd无法显示像 “ಠ౪ಠ” 一类的字符。为了获得良好的用户体验，我选择 Cmder
+            //有问题，还是注释掉吧
+            //Console.OutputEncoding = System.Text.Encoding.UTF8;
+            this.newline = true;
         }
 
         public void WriteLine(string text)
         {
+            this.newline = true;
             Console.WriteLine(text);
         }
 
         public void Write(string text)
         {
+            this.newline = false;
             Console.Write(text);
         }
 
@@ -47,7 +53,8 @@ namespace ProjectFork
 
         public string ReadLine()
         {
-            Console.Write("> ");
+            if(this.newline)
+                Console.Write("> ");
             return Console.ReadLine();
         }
 

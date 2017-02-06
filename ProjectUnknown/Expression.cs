@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ExpressionEvaluator;
 using Antlr.Runtime;
+using System.Text.RegularExpressions;
 
 namespace ProjectFork
 {
@@ -46,26 +47,21 @@ namespace ProjectFork
             }
         }
 
-        public string ReplaceVF(string text, ScriptFile localScript = null)
+        public string ReplaceVF(string text, ScriptFile localScript)
         {
-            var dict = DataManager.INSTANCE.GetVarsDictionary();
-            foreach(var i in dict)
-            {
-                text = text.Replace(this.FormatString(i.Key), i.Value);
-            }
+            string pattern = "%([A-Z]+?):([-_0-9a-zA-Z]+?)%";
 
-            var fdict = DataManager.INSTANCE.GetFlagsDictionary();
-            foreach(var i in fdict)
+            while (true)
             {
-                text = text.Replace(this.FormatString(i.Key, "FLAG"), i.Value.ToString().ToLower());
-            }
-
-            if(localScript != null)
-            {
-                var ldict = localScript.GetLocalVarDictionary();
-                foreach (var i in ldict)
+                var r = Regex.Matches(text, pattern);
+                if (r.Count == 0) break;
+                foreach(Match i in r)
                 {
-                    text = text.Replace(this.FormatString(i.Key, "LOCAL"), i.Value);
+                    string var = this.getVariable(i.Groups[1].Value, i.Groups[2].Value, localScript);
+                    if (var != null)
+                        text = text.Replace(i.Value, var);
+                    else
+                        throw new Exceptions.RuntimeException("Variable " + i.Groups[2] + " not found.");
                 }
             }
 
@@ -76,15 +72,50 @@ namespace ProjectFork
             
         }
 
-        private string FormatString(string text, string type = "VAR")
+        private string getVariable(string type, string key, ScriptFile script)
         {
-            return String.Format("%{0}:{1}%", type, text);
+            switch (type)
+            {
+                case "FLAG":
+                    {
+                        var i = DataManager.INSTANCE.GetFlagsDictionary();
+                        return i.ContainsKey(key) ? i[key].ToString() : null;
+                    }
+
+                case "LOCAL":
+                    if (script != null)
+                    {
+                        var i = script.GetLocalVarDictionary();
+                        return i.ContainsKey(key) ? i[key] : null;
+                    }
+                    else return null;
+
+                case "VAR":
+                    {
+                        var i = DataManager.INSTANCE.GetVarsDictionary();
+                        return i.ContainsKey(key) ? i[key] : null;
+                    }
+
+                case "DICT":
+                    {
+                        var i = DataManager.INSTANCE.GetDictDictionary();
+                        return i.ContainsKey(key) ? i[key] : null;
+                    }
+
+                default:
+                    return null;
+            }
         }
 
-        public string RandR(string text, ScriptFile script = null)
+        public string RandR(string text, ScriptFile script)
         {
             string t = this.ReplaceVF(text, script);
             return this.CalcExp(t);
+        }
+
+        public string UnescapeCodes(string src)
+        {
+            return Regex.Unescape(src);
         }
 
     }
