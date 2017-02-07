@@ -6,25 +6,27 @@ using System.Threading.Tasks;
 
 namespace ProjectFork.ScriptLines
 {
-    class ADDCMD : Models.ScriptLine
+    class PRINTC : Models.ScriptLine
     {
-        private string _scriptfile;
-        private string _cmd;
+        private string _text;
+        private string _color;
 
         public override void Process(string line, ref int e, ScriptFile script)
         {
             base.Process(line, ref e, script);
             string[] r = Helper.Split(line);
-
-            if (r[1] == "") throw new Exceptions.ParserException(line, e, script);
-            this._scriptfile = r[0];
-            this._cmd = r[1];
+            this._color = r[0];
+            this._text = r[1];
         }
 
         public override void Run(FConsole console)
         {
             base.Run(console);
-            Commander.INSTANCE.AddCommand(this._cmd, this._scriptfile);
+            string s = Expression.INSTANCE.ReplaceVF(this._text, this.ScriptFile);
+            string c = console.GetColor();
+            console.SetTextColor(this._color);
+            console.Write(s);
+            console.SetTextColor(c);
         }
     }
 }
